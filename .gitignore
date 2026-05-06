@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments — covers lol_analytics_dash/venv/ too
+.venv/
+venv/
+env/
+
+# Secrets — allow .env.example templates
+.env
+!.env.example
+
+# Airflow runtime
+logs/
+airflow.db
+airflow-webserver.pid
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Databricks
+.databricks/
+spark-warehouse/
