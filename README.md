@@ -10,15 +10,15 @@
 
 **Overview Tab**
 
-<video src="docs/screenshots/overview.mov" controls width="100%"></video>
+![Overview](docs/screenshots/overview.gif)
 
 **Champion Deep Dive**
 
-<video src="docs/screenshots/champ_deep_dive.mov" controls width="100%"></video>
+![Champion Deep Dive](docs/screenshots/champ_deep_dive.gif)
 
 **Meta Analysis**
 
-<video src="docs/screenshots/meta_analysis.mov" controls width="100%"></video>
+![Meta Analysis](docs/screenshots/meta_analysis.gif)
 
 ---
 
