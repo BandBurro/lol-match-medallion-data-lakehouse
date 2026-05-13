@@ -1,16 +1,16 @@
-# Databricks notebook source
 import requests
 from pyspark.sql.functions import lit
 from pyspark.sql import Row
 
-# 1. Configuração de Parâmetros (O "Nitty-Gritty")
-# Usamos widgets para que o Airflow possa injetar a chave automaticamente depois
-dbutils.widgets.text("api_key", "RGAPI-ee483d53-7b00-48af-bf68-273ae8bd1805")
+# Mantemos apenas o widget do PUUID (que não é uma senha crítica)
 dbutils.widgets.text("puuid", "B7hVY8JCtnnjfTG89uULeZ2h3nYxIrB5uchwhc2NPZ8AAbc3zSlEW0fp8aGpXxnN_txKpr28lXWKew")
 
-API_KEY = dbutils.widgets.get("api_key")
+# Buscamos a chave DIRETAMENTE do cofre que você criou via CLI
+API_KEY = dbutils.secrets.get(scope="riot-api", key="developer-key")
+
+# Pegamos o valor do PUUID do widget acima
 PUUID = dbutils.widgets.get("puuid")
-REGION = "americas" # Região para Match-V5 no Brasil
+REGION = "americas"
 
 # 2. Busca dos IDs das últimas 20 partidas
 url_match_ids = f"https://{REGION}.api.riotgames.com/lol/match/v5/matches/by-puuid/{PUUID}/ids?start=0&count=20&api_key={API_KEY}"
@@ -45,8 +45,6 @@ df_bronze = spark.createDataFrame([Row(json_payload=s) for s in json_strings])
 df_bronze.write.format("delta").mode("overwrite").saveAsTable("bronze_matches_lol")
 
 print(f"Sucesso! {df_bronze.count()} partidas salvas como strings na bronze_matches_lol.")
-
-# COMMAND ----------
 
 # Verificando as 5 primeiras linhas da sua nova tabela Bronze
 display(spark.table("bronze_matches_lol").limit(5))
