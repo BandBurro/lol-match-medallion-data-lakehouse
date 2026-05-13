@@ -23,14 +23,14 @@ with DAG(
     extrair_bronze = DatabricksRunNowOperator(
         task_id='extrair_partidas_lol_bronze',
         databricks_conn_id='databricks_default', 
-        job_id=517916893315560, 
+        job_name='LoL_Extraction_Bronze', 
     )
 
     # Tarefa 2: Transformação (Substitua pelo ID do seu Job Silver)
     transformar_silver = DatabricksRunNowOperator(
         task_id='transformar_partidas_lol_silver',
         databricks_conn_id='databricks_default', 
-        job_id=275330635706256, 
+        job_name='LoL_Transformation_Silver', 
     )
 
     # A Ordem Mágica da Engenharia de Dados:
@@ -43,7 +43,7 @@ with DAG(
     agregar_gold = DatabricksRunNowOperator(
         task_id='calcular_metricas_lol_gold',
         databricks_conn_id='databricks_default', 
-        job_id=155591447456661, 
+        job_name='LoL_Aggregation_Gold', 
     )
 
     # A Ordem Mágica Atualizada: Bronze -> Silver -> Gold
