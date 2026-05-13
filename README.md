@@ -6,13 +6,19 @@
 
 ## Dashboard Showcase
 
-| Overview Tab | Champion Comparison |
-|:---:|:---:|
-| ![Overview](docs/screenshots/tab_overview.png) | ![Comparison](docs/screenshots/tab_comparison.png) |
+![Dashboard](docs/screenshots/image.png)
 
-| Meta Analysis | Tier List |
-|:---:|:---:|
-| ![Meta](docs/screenshots/tab_meta.png) | ![Tier List](docs/screenshots/tab_tierlist.png) |
+**Overview Tab**
+
+<video src="docs/screenshots/overview.mov" controls width="100%"></video>
+
+**Champion Deep Dive**
+
+<video src="docs/screenshots/champ_deep_dive.mov" controls width="100%"></video>
+
+**Meta Analysis**
+
+<video src="docs/screenshots/meta_analysis.mov" controls width="100%"></video>
 
 ---
 
