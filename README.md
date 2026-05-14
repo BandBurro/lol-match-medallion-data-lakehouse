@@ -111,7 +111,7 @@ projeto-lol/
 - Python 3.13 (for local dashboard development)
 - A Databricks workspace with:
   - A running SQL Warehouse
-  - Three Databricks Jobs created for Bronze, Silver, and Gold scripts — note their Job IDs
+  - Three Databricks Jobs created for Bronze, Silver, and Gold scripts — named `LoL_Extraction_Bronze`, `LoL_Transformation_Silver`, and `LoL_Aggregation_Gold`
 - A [Riot Games API key](https://developer.riotgames.com/) (development keys expire every 24 hours)
 
 ---
@@ -133,19 +133,36 @@ cp lol_analytics_dash/.env.example lol_analytics_dash/.env
 # Edit lol_analytics_dash/.env with your Databricks connection details
 ```
 
-### 2. Configure the DAG with your Databricks Job IDs
+### 2. Configure the DAG with your Databricks Job names
 
-Open [dags/dag_lol_pipeline.py](dags/dag_lol_pipeline.py) and replace the three job IDs with your own:
+The DAG references Databricks Jobs by **name** (not by numeric ID), so no code changes are required — just make sure your Databricks Jobs match these exact names:
 
-```python
-extrair_bronze   = DatabricksRunNowOperator(job_id=YOUR_BRONZE_JOB_ID,  ...)
-transformar_silver = DatabricksRunNowOperator(job_id=YOUR_SILVER_JOB_ID, ...)
-agregar_gold     = DatabricksRunNowOperator(job_id=YOUR_GOLD_JOB_ID,    ...)
+| Airflow Task | Expected Databricks Job Name |
+|---|---|
+| `extrair_partidas_lol_bronze` | `LoL_Extraction_Bronze` |
+| `transformar_partidas_lol_silver` | `LoL_Transformation_Silver` |
+| `calcular_metricas_lol_gold` | `LoL_Aggregation_Gold` |
+
+If your jobs have different names, update the `job_name` fields in [dags/dag_lol_pipeline.py](dags/dag_lol_pipeline.py). Then add a `databricks_default` Airflow Connection via the UI (Admin → Connections) with your workspace host and personal access token.
+
+### 3. Configure Databricks Secrets for the Riot API key
+
+The Bronze script reads the API key from **Databricks Secrets** — nothing is hardcoded. Create the secret scope and key using the Databricks CLI before running the pipeline for the first time:
+
+```bash
+# Create the scope (once per workspace)
+databricks secrets create-scope riot-api
+
+# Store your Riot Games API key
+databricks secrets put-secret riot-api developer-key --string-value "RGAPI-your-key-here"
 ```
 
-Then add a `databricks_default` Airflow Connection via the UI (Admin → Connections) with your workspace host and personal access token.
+The script retrieves it at runtime via:
+```python
+API_KEY = dbutils.secrets.get(scope="riot-api", key="developer-key")
+```
 
-### 3. Start Airflow
+### 4. Start Airflow
 
 ```bash
 docker compose -f infra/docker-compose.yaml up airflow-init
@@ -154,7 +171,7 @@ docker compose -f infra/docker-compose.yaml up -d
 
 Access the UI at **http://localhost:8080** (user: `airflow`, password: `airflow`).
 
-### 4. Run the dashboard — local development
+### 5. Run the dashboard — local development
 
 ```bash
 cd lol_analytics_dash
@@ -165,7 +182,7 @@ python app.py
 
 Open **http://localhost:8050**.
 
-### 5. Run the dashboard — Docker
+### 6. Run the dashboard — Docker
 
 ```bash
 # Build context must be the project root
@@ -207,10 +224,28 @@ Airflow triggers these three Databricks Jobs in sequence once per day via `Datab
 
 ---
 
+## Engineering Integrity
+
+Four deliberate design decisions address common pipeline reliability issues:
+
+### 1. Secure Secrets — no hardcoded credentials
+The Riot API key is fetched at runtime from Databricks Secrets (`dbutils.secrets.get`), never embedded in source code. See [Setup step 3](#3-configure-databricks-secrets-for-the-riot-api-key) for the one-time CLI setup. Development keys expire every 24 hours; rotating the secret in the vault is all that's needed — no code changes.
+
+### 2. DAG decoupled from Job IDs
+The DAG references Databricks Jobs by `job_name` instead of numeric `job_id`. This means the orchestration definition doesn't break when a job is recreated (which changes its ID) and requires no code edits between environments.
+
+### 3. Idempotent Gold layer — MERGE instead of overwrite
+`3_Gold_Aggregations_LoL.py` writes with a Delta Lake `MERGE` (upsert) rather than `mode("overwrite")`. Re-running the pipeline any number of times converges to the same correct state: existing champions are updated in-place and new ones are inserted, with no data loss or duplication.
+
+### 4. Python UDF performance (known limitation)
+`2_Silver_Transformation_LoL.py` uses a Python UDF to parse JSON, which serializes rows between the JVM and the Python interpreter. For the current data volume (≤ 20 matches per run) this is acceptable. At larger scale, the UDF should be replaced with native Spark functions (`from_json`, `get_json_object`) to eliminate the serialization overhead.
+
+---
+
 ## Notes
 
-- The Riot API key hardcoded in `databricks/1_Bronze_Extraction_LoL.py` is a development key (expires every 24 hours). Clear or rotate it before making this repository public.
 - The dashboard falls back to mock data automatically if the Databricks connection fails, so it can run offline for UI development.
+- Riot API development keys expire every 24 hours. Rotate them via the Databricks Secrets CLI without touching source code (see [Secure Secrets](#1-secure-secrets--no-hardcoded-credentials)).
 
 ---
 
